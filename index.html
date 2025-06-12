@@ -183,4 +183,27 @@
 
         const json = await res.json();
         if (!json.values || json.values.length <= 1) {
-          dadosDiv.innerHTML = '
+          dadosDiv.innerHTML = '⚠️ Nenhum dado encontrado.';
+          return;
+        }
+
+        const cabecalho = json.values[0];
+        const linhas = json.values.slice(1);
+
+        let tabela = '<strong>Dados Cadastrados:</strong>\n\n';
+
+        linhas.forEach((linha) => {
+          cabecalho.forEach((campo, i) => {
+            tabela += `${campo}: ${linha[i] || '-'}\n`;
+          });
+          tabela += '\n--------------------\n\n';
+        });
+
+        dadosDiv.innerText = tabela;
+      } catch (e) {
+        dadosDiv.innerHTML = `❌ Erro ao carregar dados: ${e.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
