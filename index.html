@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Navios</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #00ffcc;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      max-width: 500px;
+      margin-bottom: 20px;
+    }
+
+    input, select, textarea, button {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 1em;
+    }
+
+    button {
+      background-color: #00ffcc;
+      color: #121212;
+      cursor: pointer;
+    }
+
+    .mensagem {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .sucesso {
+      color: #00ff99;
+    }
+
+    .erro {
+      color: #ff5555;
+    }
+
+    #dados {
+      max-width: 800px;
+      white-space: pre-wrap;
+      background-color: #1e1e1e;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Registro de Navios</h2>
+
+  <form id="formNavio">
+    <input type="text" id="nome" placeholder="Nome do Navio" required>
+    <input type="number" id="imo" placeholder="IMO">
+    <input type="number" id="mmsi" placeholder="MMSI">
+    
+    <select id="caracteristica" required>
+      <option value="">Selecione a Característica</option>
+      <option value="Container">Container</option>
+      <option value="Graneleiro">Graneleiro</option>
+      <option value="Pesca">Pesca</option>
+      <option value="Pesqueiro">Pesqueiro</option>
+      <option value="Petroleiro">Petroleiro</option>
+      <option value="Tanque">Tanque</option>
+    </select>
+
+    <select id="seguro" required>
+      <option value="">Possui seguro?</option>
+      <option value="Sim">Sim</option>
+      <option value="Não">Não</option>
+    </select>
+
+    <select id="classificado" required>
+      <option value="">Classificação</option>
+      <option value="VOI">VOI</option>
+      <option value="COI">COI</option>
+      <option value="CCOI">CCOI</option>
+    </select>
+
+    <textarea id="observacao" placeholder="Observação..."></textarea>
+    <button type="submit">Cadastrar</button>
+  </form>
+
+  <div class="mensagem" id="resultado"></div>
+
+  <button onclick="visualizarDados()">Visualizar Banco de Dados</button>
+  <div id="dados"></div>
+
+  <script>
+    const webhookUrl = 'COLE_AQUI_A_URL_DO_WEB_APP_SCRIPT'; // Substitua pela URL do seu Web App
+
+    document.getElementById('formNavio').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const payload = {
+        nome: document.getElementById('nome').value,
+        imo: document.getElementById('imo').value,
+        mmsi: document.getElementById('mmsi').value,
+        caracteristica: document.getElementById('caracteristica').value,
+        seguro: document.getElementById('seguro').value,
+        classificado: document.getElementById('classificado').value,
+        observacao: document.getElementById('observacao').value
+      };
+
+      fetch(webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      // Mostra mensagem (não tem retorno real por causa do no-cors)
+      document.getElementById('resultado').textContent = 'Adicionado com Sucesso!';
+      document.getElementById('resultado').className = 'mensagem sucesso';
+      this.reset();
+    });
+
+    async function visualizarDados() {
+      const sheetId = 'ID_DA_SUA_PLANILHA'; // Pegue na URL da planilha: https://docs.google.com/spreadsheets/d/1aBcD...  <- esse é o ID
+      const sheetName = 'Sheet1'; // Troque se mudou o nome da aba
+      const apiKey = 'SUA_API_KEY'; // Precisa criar uma API Key no Google Cloud Console (opcionalmente)
+
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?key=${apiKey}`;
+
+      const dadosDiv = document.getElementById('dados');
+      dadosDiv.innerHTML = 'Carregando...';
+
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        dadosDiv.innerHTML = JSON.stringify(json.values, null, 2);
+      } catch (e) {
+        dadosDiv.innerHTML = 'Erro ao carregar dados.';
+      }
+    }
+  </script>
+</body>
+</html>
