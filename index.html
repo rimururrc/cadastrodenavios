@@ -7,22 +7,22 @@
     body {
       background-color: #121212;
       color: #ffffff;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       padding: 30px;
-      max-width: 800px;
+      max-width: 600px;
       margin: auto;
     }
 
     h2 {
-      color: #00ffcc;
       text-align: center;
+      color: #00ffcc;
     }
 
     form {
       display: flex;
       flex-direction: column;
       gap: 15px;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
 
     input,
@@ -123,42 +123,55 @@
   <div id="dados"></div>
 
   <script>
-    // Substitua essas variáveis conforme necessário
     const webhookUrl = 'https://script.google.com/macros/s/AKfycbzhp4Sk_0RDsjiUmDT1u2qf3fB4sQ4gLqGPnfMHa7gboRqf9FHHYm2J1oX7lLNipEQr/exec'; 
-    const sheetId = '1dMrjHDh3dhsxSVUCb7h03Yoj1DLqZPn7sNx96EgssI0' /* Coloque aqui o ID da sua planilha */;
-    const apiKey = 'AIzaSyC1Uy1QulRVGCitk8N2HBq0WRbGauEzHIs'; // Sua API Key
-    const sheetName = 'Cadastro de Navios'; // Altere se mudou o nome da aba
+    const sheetId = '1dMrjHDh3dhsxSVUCb7h03Yoj1DLqZPn7sNx96EgssI0';
+    const sheetName = 'Planilha1'; // Mude se nomeou diferente
+    const apiKey = 'AIzaSyC1Uy1QulRVGCitk8N2HBq0WRbGauEzHIs';
 
-    // Lida com o envio do formulário
-    document.getElementById('formNavio').addEventListener('submit', function (e) {
+    // Enviar dados via formulário
+    document.getElementById('formNavio').addEventListener('submit', async function (e) {
       e.preventDefault();
+      const resultado = document.getElementById('resultado');
+      resultado.textContent = '';
+      resultado.className = 'mensagem';
 
       const payload = {
-        nome: document.getElementById('nome').value,
-        imo: document.getElementById('imo').value,
-        mmsi: document.getElementById('mmsi').value,
-        caracteristica: document.getElementById('caracteristica').value,
-        seguro: document.getElementById('seguro').value,
-        classificado: document.getElementById('classificado').value,
-        observacao: document.getElementById('observacao').value
+        nome: document.getElementById('nome').value.trim(),
+        imo: document.getElementById('imo').value.trim(),
+        mmsi: document.getElementById('mmsi').value.trim(),
+        caracteristica: document.getElementById('caracteristica').value.trim(),
+        seguro: document.getElementById('seguro').value.trim(),
+        classificado: document.getElementById('classificado').value.trim(),
+        observacao: document.getElementById('observacao').value.trim()
       };
 
-      fetch(webhookUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      try {
+        const res = await fetch(webhookUrl, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-      // Mostra mensagem de sucesso
-      const resultado = document.getElementById('resultado');
-      resultado.textContent = '✅ Adicionado com Sucesso!';
-      resultado.className = 'mensagem sucesso';
+        if (!res.ok) throw new Error('Resposta não OK');
 
-      this.reset();
+        const json = await res.json();
+
+        if (json.result === 'sucesso') {
+          resultado.textContent = '✅ Adicionado com Sucesso!';
+          resultado.className = 'mensagem sucesso';
+          this.reset();
+        } else {
+          throw new Error('Erro no servidor');
+        }
+      } catch (error) {
+        console.error(error);
+        resultado.textContent = '❌ Erro ao salvar.';
+        resultado.className = 'mensagem erro';
+      }
     });
 
-    // Função para carregar dados da planilha
+    // Carregar dados da planilha
     async function visualizarDados() {
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?key=${apiKey}`;
       const dadosDiv = document.getElementById('dados');
@@ -169,29 +182,5 @@
         if (!res.ok) throw new Error('Erro ao carregar dados');
 
         const json = await res.json();
-        if (!json.values || json.values.length === 0) {
-          dadosDiv.innerHTML = '⚠️ Nenhum dado encontrado.';
-          return;
-        }
-
-        // Exibe os dados em formato organizado
-        let tabela = '<strong>Dados Cadastrados:</strong>\n\n';
-        const cabecalho = json.values[0];
-        const linhas = json.values.slice(1);
-
-        // Monta uma "tabela" simples
-        linhas.forEach((linha) => {
-          cabecalho.forEach((campo, i) => {
-            tabela += `${campo}: ${linha[i] || '-'}\n`;
-          });
-          tabela += '\n--------------------\n\n';
-        });
-
-        dadosDiv.innerText = tabela;
-      } catch (e) {
-        dadosDiv.innerHTML = `❌ Erro ao carregar dados: ${e.message}`;
-      }
-    }
-  </script>
-</body>
-</html>
+        if (!json.values || json.values.length <= 1) {
+          dadosDiv.innerHTML = '
