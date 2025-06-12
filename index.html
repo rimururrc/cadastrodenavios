@@ -1,44 +1,62 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Cadastro de Navios</title>
   <style>
     body {
       background-color: #121212;
       color: #ffffff;
-      font-family: Arial, sans-serif;
-      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 30px;
+      max-width: 800px;
+      margin: auto;
     }
 
     h2 {
       color: #00ffcc;
+      text-align: center;
     }
 
     form {
       display: flex;
       flex-direction: column;
-      max-width: 500px;
-      margin-bottom: 20px;
+      gap: 15px;
+      margin-bottom: 30px;
     }
 
-    input, select, textarea, button {
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 5px;
+    input,
+    select,
+    textarea,
+    button {
+      padding: 12px;
+      border-radius: 6px;
       border: none;
       font-size: 1em;
+    }
+
+    input,
+    select,
+    textarea {
+      background-color: #1e1e1e;
+      color: #ffffff;
     }
 
     button {
       background-color: #00ffcc;
       color: #121212;
       cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #00cca3;
     }
 
     .mensagem {
-      margin-top: 10px;
       font-weight: bold;
+      margin-top: 10px;
     }
 
     .sucesso {
@@ -50,11 +68,13 @@
     }
 
     #dados {
-      max-width: 800px;
-      white-space: pre-wrap;
       background-color: #1e1e1e;
-      padding: 10px;
-      border-radius: 5px;
+      padding: 15px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      max-height: 400px;
+      overflow-y: auto;
     }
   </style>
 </head>
@@ -63,10 +83,12 @@
   <h2>Registro de Navios</h2>
 
   <form id="formNavio">
-    <input type="text" id="nome" placeholder="Nome do Navio" required>
-    <input type="number" id="imo" placeholder="IMO">
-    <input type="number" id="mmsi" placeholder="MMSI">
-    
+    <input type="text" id="nome" placeholder="Nome do Navio" required />
+
+    <input type="number" id="imo" placeholder="IMO" />
+
+    <input type="number" id="mmsi" placeholder="MMSI" />
+
     <select id="caracteristica" required>
       <option value="">Selecione a Característica</option>
       <option value="Container">Container</option>
@@ -91,17 +113,23 @@
     </select>
 
     <textarea id="observacao" placeholder="Observação..."></textarea>
-    <button type="submit">Cadastrar</button>
+
+    <button type="submit">Cadastrar Navio</button>
   </form>
 
   <div class="mensagem" id="resultado"></div>
 
-  <button onclick="visualizarDados()">Visualizar Banco de Dados</button>
+  <button onclick="visualizarDados()">🔍 Visualizar Banco de Dados</button>
   <div id="dados"></div>
 
   <script>
-    const webhookUrl = 'https://script.google.com/macros/s/AKfycbzhp4Sk_0RDsjiUmDT1u2qf3fB4sQ4gLqGPnfMHa7gboRqf9FHHYm2J1oX7lLNipEQr/exec'; // Substitua pela URL do seu Web App
+    // Substitua essas variáveis conforme necessário
+    const webhookUrl = 'https://script.google.com/macros/s/AKfycbzhp4Sk_0RDsjiUmDT1u2qf3fB4sQ4gLqGPnfMHa7gboRqf9FHHYm2J1oX7lLNipEQr/exec'; 
+    const sheetId = '1dMrjHDh3dhsxSVUCb7h03Yoj1DLqZPn7sNx96EgssI0' /* Coloque aqui o ID da sua planilha */;
+    const apiKey = 'AIzaSyC1Uy1QulRVGCitk8N2HBq0WRbGauEzHIs'; // Sua API Key
+    const sheetName = 'Planilha1'; // Altere se mudou o nome da aba
 
+    // Lida com o envio do formulário
     document.getElementById('formNavio').addEventListener('submit', function (e) {
       e.preventDefault();
 
@@ -122,28 +150,46 @@
         body: JSON.stringify(payload)
       });
 
-      // Mostra mensagem (não tem retorno real por causa do no-cors)
-      document.getElementById('resultado').textContent = 'Adicionado com Sucesso!';
-      document.getElementById('resultado').className = 'mensagem sucesso';
+      // Mostra mensagem de sucesso
+      const resultado = document.getElementById('resultado');
+      resultado.textContent = '✅ Adicionado com Sucesso!';
+      resultado.className = 'mensagem sucesso';
+
       this.reset();
     });
 
+    // Função para carregar dados da planilha
     async function visualizarDados() {
-      const sheetId = 'ID_DA_SUA_PLANILHA'; // Pegue na URL da planilha: https://docs.google.com/spreadsheets/d/1aBcD...  <- esse é o ID
-      const sheetName = 'Sheet1'; // Troque se mudou o nome da aba
-      const apiKey = 'SUA_API_KEY'; // Precisa criar uma API Key no Google Cloud Console (opcionalmente)
-
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?key=${apiKey}`;
-
       const dadosDiv = document.getElementById('dados');
-      dadosDiv.innerHTML = 'Carregando...';
+      dadosDiv.innerHTML = '🔄 Carregando dados...';
 
       try {
         const res = await fetch(url);
+        if (!res.ok) throw new Error('Erro ao carregar dados');
+
         const json = await res.json();
-        dadosDiv.innerHTML = JSON.stringify(json.values, null, 2);
+        if (!json.values || json.values.length === 0) {
+          dadosDiv.innerHTML = '⚠️ Nenhum dado encontrado.';
+          return;
+        }
+
+        // Exibe os dados em formato organizado
+        let tabela = '<strong>Dados Cadastrados:</strong>\n\n';
+        const cabecalho = json.values[0];
+        const linhas = json.values.slice(1);
+
+        // Monta uma "tabela" simples
+        linhas.forEach((linha) => {
+          cabecalho.forEach((campo, i) => {
+            tabela += `${campo}: ${linha[i] || '-'}\n`;
+          });
+          tabela += '\n--------------------\n\n';
+        });
+
+        dadosDiv.innerText = tabela;
       } catch (e) {
-        dadosDiv.innerHTML = 'Erro ao carregar dados.';
+        dadosDiv.innerHTML = `❌ Erro ao carregar dados: ${e.message}`;
       }
     }
   </script>
